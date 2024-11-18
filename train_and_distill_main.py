@@ -18,7 +18,7 @@ evalset_path = 'python/final/jsonl/valid/python_valid_0.jsonl'
 evalset_filename = 'eval.csv'
 
 device = ''
-model = SetFitModel.from_pretrained("microsoft/codebert-base", device_map = 'auto')
+model = SetFitModel.from_pretrained("sentence-transformers/all-mpnet-base-v2", device_map = 'auto')
 # model = RobertaModel.from_pretrained("microsoft/codebert-base", device_map = 'auto')
 
 if Path(trainset_filename).is_file(): pass

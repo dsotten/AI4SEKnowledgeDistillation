@@ -20,10 +20,9 @@ def main(file_path, output_name):
 
     print(f'Total number of files: {len(python_files):,}')
 
-    columns_long_list = ['id', 'repository_name', 'func_path_in_repository', 'func_name', 
-                        'whole_func_string', 'language', 'func_code_string', 
-                        'func_code_tokens', 'func_documentation_string', 'func_documentation_string_tokens',
-                        'split_name','func_code_url']
+    columns_long_list = ['repo', 'path', 'func_name', 'original_string', 
+                        'language', 'code', 'code_tokens', 'docstring',
+                        'docstring_tokens','sha','url']
 
     # columns_short_list = ['code_tokens', 'docstring_tokens', 
     #                     'language', 'partition']

@@ -38,5 +38,5 @@ def main(file_path, output_name):
     df = jsonl_list_to_dataframe(python_files)
 
     df.head(3)
-    data = df['code']
+    data = df['code_tokens','docstring_tokens']
     data.to_csv(output_name, index=False)

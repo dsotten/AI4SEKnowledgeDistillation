@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 import ast
 
-from transformers import Trainer
+from transformers import RobertaModel
 from datasets import Dataset
 
 from setfit import SetFitModel, TrainingArguments, Trainer
@@ -18,7 +18,8 @@ evalset_path = 'python/final/jsonl/train/python_valid_0.jsonl'
 evalset_filename = 'eval.csv'
 
 device = ''
-model = SetFitModel.from_pretrained("microsoft/codebert-base", device_map = 'auto')
+# model = SetFitModel.from_pretrained("microsoft/codebert-base", device_map = 'auto')
+model = RobertaModel.from_pretrained("microsoft/codebert-base", device_map = 'auto')
 
 if Path(trainset_filename).is_file(): pass
 else: loaddata.main(trainset_path, trainset_filename)

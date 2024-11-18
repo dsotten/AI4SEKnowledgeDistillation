@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 import ast
 
-from transformers import RobertaModel
+# from transformers import RobertaModel
 from datasets import Dataset
 
 from setfit import SetFitModel, TrainingArguments, Trainer
@@ -12,14 +12,14 @@ from setfit import DistillationTrainer
 
 trainset_path = 'python/final/jsonl/train/python_train_0.jsonl' #Might need to account for dataset being spread across 13 files
 trainset_filename = 'train.csv'
-testset_path = 'python/final/jsonl/train/python_test_0.jsonl'
+testset_path = 'python/final/jsonl/test/python_test_0.jsonl'
 testset_filename = 'test.csv'
-evalset_path = 'python/final/jsonl/train/python_valid_0.jsonl'
+evalset_path = 'python/final/jsonl/valid/python_valid_0.jsonl'
 evalset_filename = 'eval.csv'
 
 device = ''
-# model = SetFitModel.from_pretrained("microsoft/codebert-base", device_map = 'auto')
-model = RobertaModel.from_pretrained("microsoft/codebert-base", device_map = 'auto')
+model = SetFitModel.from_pretrained("microsoft/codebert-base", device_map = 'auto')
+# model = RobertaModel.from_pretrained("microsoft/codebert-base", device_map = 'auto')
 
 if Path(trainset_filename).is_file(): pass
 else: loaddata.main(trainset_path, trainset_filename)
@@ -44,18 +44,20 @@ eval_df = pd.read_csv(evalset_filename)
 eval_df['code_tokens'] = eval_df['code_tokens'].apply(ast.literal_eval)
 eval_df['docstring_tokens'] = eval_df['docstring_tokens'].apply(ast.literal_eval)
 eval_dataset = Dataset.from_pandas(eval_df)
-
+print("Finished loading the datasets")
 
 args = TrainingArguments(
     batch_size=64,
     num_epochs=5,
 )
 
+print("Beginning training...")
 trainer = Trainer(
     model=model,
     args=args,
     train_dataset=train_dataset,
     eval_dataset=eval_dataset,
+    column_mapping={"code_tokens": "text", "docstring_tokens": "label"}
 )
 teacher_model = trainer.train()
 

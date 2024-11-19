@@ -22,8 +22,8 @@ def merge_json_files(file_paths, output_file):
     merged_data = []
     for path in file_paths:
         with open(path, 'r') as file:
-            data = json.load(file)
-            merged_data.append(data)
+            for line in file:
+                merged_data.append(json.loads(line))
     with open(output_file, 'w') as outfile:
         json.dump(merged_data, outfile)
 
@@ -33,10 +33,12 @@ model = SetFitModel.from_pretrained("sentence-transformers/all-mpnet-base-v2", d
 
 if Path(trainset_filename).is_file(): pass
 else: 
-    trainset_files = []
-    for x in range(0,13):
-        trainset_files += ['python/final/jsonl/train/python_train_'+x+'.jsonl']
-    merge_json_files(trainset_files,trainset_path)
+    if Path(trainset_path).is_file(): pass
+    else:
+        trainset_files = []
+        for x in range(0,13):
+            trainset_files.append('python/final/jsonl/train/python_train_'+str(x)+'.jsonl')
+        merge_json_files(trainset_files,trainset_path)
     loaddata.main(trainset_path, trainset_filename)
 
 if Path(testset_filename).is_file(): pass

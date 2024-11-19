@@ -31,18 +31,18 @@ if Path(evalset_filename).is_file(): pass
 else: loaddata.main(evalset_path, evalset_filename)
 
 train_df = pd.read_csv(trainset_filename)
-train_df['code_tokens'] = train_df['code_tokens'].apply(ast.literal_eval)
-train_df['docstring_tokens'] = train_df['docstring_tokens'].apply(ast.literal_eval)
+# train_df['code_tokens'] = train_df['code_tokens'].apply(ast.literal_eval)
+# train_df['docstring_tokens'] = train_df['docstring_tokens'].apply(ast.literal_eval)
 train_dataset = Dataset.from_pandas(train_df)
 
 test_df = pd.read_csv(testset_filename)
-test_df['code_tokens'] = test_df['code_tokens'].apply(ast.literal_eval)
-test_df['docstring_tokens'] = test_df['docstring_tokens'].apply(ast.literal_eval)
+# test_df['code_tokens'] = test_df['code_tokens'].apply(ast.literal_eval)
+# test_df['docstring_tokens'] = test_df['docstring_tokens'].apply(ast.literal_eval)
 test_dataset = Dataset.from_pandas(test_df)
 
 eval_df = pd.read_csv(evalset_filename)
-eval_df['code_tokens'] = eval_df['code_tokens'].apply(ast.literal_eval)
-eval_df['docstring_tokens'] = eval_df['docstring_tokens'].apply(ast.literal_eval)
+# eval_df['code_tokens'] = eval_df['code_tokens'].apply(ast.literal_eval)
+# eval_df['docstring_tokens'] = eval_df['docstring_tokens'].apply(ast.literal_eval)
 eval_dataset = Dataset.from_pandas(eval_df)
 print("Finished loading the datasets")
 
@@ -57,7 +57,8 @@ trainer = Trainer(
     args=args,
     train_dataset=train_dataset,
     eval_dataset=eval_dataset,
-    column_mapping={"code_tokens": "text", "docstring_tokens": "label"}
+    # column_mapping={"code_tokens": "text", "docstring_tokens": "label"}
+    column_mapping={"code": "text", "docstring": "label"}
 )
 teacher_model = trainer.train()
 

@@ -1,4 +1,5 @@
 import loaddata
+import json
 import pandas as pd
 import json
 from pathlib import Path
@@ -10,19 +11,33 @@ from datasets import Dataset
 from setfit import SetFitModel, TrainingArguments, Trainer
 from setfit import DistillationTrainer
 
-trainset_path = 'python/final/jsonl/train/python_train_0.jsonl' #Might need to account for dataset being spread across 13 files
+trainset_path = 'python/final/jsonl/train/python_train.jsonl' #Might need to account for dataset being spread across 13 files
 trainset_filename = 'train.csv'
 testset_path = 'python/final/jsonl/test/python_test_0.jsonl'
 testset_filename = 'test.csv'
 evalset_path = 'python/final/jsonl/valid/python_valid_0.jsonl'
 evalset_filename = 'eval.csv'
 
+def merge_json_files(file_paths, output_file):
+    merged_data = []
+    for path in file_paths:
+        with open(path, 'r') as file:
+            data = json.load(file)
+            merged_data.append(data)
+    with open(output_file, 'w') as outfile:
+        json.dump(merged_data, outfile)
+
 device = ''
 model = SetFitModel.from_pretrained("sentence-transformers/all-mpnet-base-v2", device_map = 'auto')
 # model = RobertaModel.from_pretrained("microsoft/codebert-base", device_map = 'auto')
 
 if Path(trainset_filename).is_file(): pass
-else: loaddata.main(trainset_path, trainset_filename)
+else: 
+    trainset_files = []
+    for x in range(0,13):
+        trainset_files += ['python/final/jsonl/train/python_train_'+x+'.jsonl']
+    merge_json_files(trainset_files,trainset_path)
+    loaddata.main(trainset_path, trainset_filename)
 
 if Path(testset_filename).is_file(): pass
 else: loaddata.main(testset_path, testset_filename)
@@ -43,7 +58,8 @@ test_dataset = Dataset.from_pandas(test_df)
 eval_df = pd.read_csv(evalset_filename)
 # eval_df['code_tokens'] = eval_df['code_tokens'].apply(ast.literal_eval)
 # eval_df['docstring_tokens'] = eval_df['docstring_tokens'].apply(ast.literal_eval)
-eval_dataset = Dataset.from_pandas(eval_df)
+unlabeled_train_dataset = Dataset.from_pandas(eval_df)
+unlabeled_train_dataset = unlabeled_train_dataset.remove_columns("docstring")
 print("Finished loading the datasets")
 
 args = TrainingArguments(
@@ -56,15 +72,15 @@ trainer = Trainer(
     model=model,
     args=args,
     train_dataset=train_dataset,
-    eval_dataset=eval_dataset,
+    eval_dataset=test_dataset,
     # column_mapping={"code_tokens": "text", "docstring_tokens": "label"}
     column_mapping={"code": "text", "docstring": "label"}
 )
 teacher_model = trainer.train()
-
 metrics = trainer.evaluate()
 print(metrics)
 
+model = SetFitModel.from_pretrained("sentence-transformers/all-MiniLM-L12-v2", device_map = 'auto')
 
 distillation_args = TrainingArguments(
     batch_size=16,
@@ -76,7 +92,7 @@ distillation_trainer = DistillationTrainer(
     student_model=model,
     args=distillation_args,
     train_dataset=unlabeled_train_dataset,
-    eval_dataset=eval_dataset,
+    eval_dataset=test_dataset,
 )
 
 # Train student with knowledge distillation

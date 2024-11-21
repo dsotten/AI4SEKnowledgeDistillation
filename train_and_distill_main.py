@@ -70,7 +70,7 @@ args = TrainingArguments(
 )
 
 print("Beginning training...")
-trainer = Trainer(
+teacher_trainer = Trainer(
     model=model,
     args=args,
     train_dataset=train_dataset,
@@ -78,9 +78,10 @@ trainer = Trainer(
     # column_mapping={"code_tokens": "text", "docstring_tokens": "label"}
     column_mapping={"code": "text", "docstring": "label"}
 )
-teacher_model = trainer.train()
-metrics = trainer.evaluate()
+teacher_model = teacher_trainer.train()
+metrics = teacher_trainer.evaluate()
 print(metrics)
+teacher_trainer.save_model('./teacher-model')
 
 model = SetFitModel.from_pretrained("sentence-transformers/all-MiniLM-L12-v2", device_map = 'auto')
 
@@ -101,3 +102,4 @@ distillation_trainer = DistillationTrainer(
 distilled_model = distillation_trainer.train()
 distillation_metrics = distillation_trainer.evaluate()
 print(distillation_metrics)
+distillation_trainer.save_model('./distilled-model')

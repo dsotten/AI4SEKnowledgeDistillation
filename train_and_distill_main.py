@@ -18,18 +18,60 @@ testset_filename = 'test.csv'
 evalset_path = 'python/final/jsonl/valid/python_valid_0.jsonl'
 evalset_filename = 'eval.csv'
 
-def merge_json_files(file_paths, output_file):
-    merged_data = []
-    for path in file_paths:
-        with open(path, 'r') as file:
-            for line in file:
-                merged_data.append(json.loads(line))
-    with open(output_file, 'w') as outfile:
-        json.dump(merged_data, outfile)
+# def merge_json_files(file_paths, output_file):
+#     # merged_data = []
+#     with open(output_file, "w") as out:
+#         for path in file_paths:
+#             with open(path, 'r') as file:
+#                 for line in file:
+#                     out.write(str(json.loads(line))+"\n")
+#     # with open(output_file, 'w') as outfile:
+#     #     json.dump(merged_data, outfile)
+
+def combine_jsonl_files(input_files, output_file):
+    """
+    Combine multiple JSONL files into a single JSONL file.
+    
+    Args:
+        input_files (list): List of paths to input JSONL files
+        output_file (str): Path to the output JSONL file
+    """
+    # Create output directory if it doesn't exist
+    output_path = Path(output_file)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    # Open output file in write mode
+    with open(output_file, 'w', encoding='utf-8') as outfile:
+        # Process each input file
+        for input_file in input_files:
+            try:
+                with open(input_file, 'r', encoding='utf-8') as infile:
+                    # Read line by line to handle large files efficiently
+                    for line in infile:
+                        # Skip empty lines
+                        if not line.strip():
+                            continue
+                            
+                        # Verify each line is valid JSON
+                        try:
+                            # Parse and re-serialize to ensure consistent formatting
+                            json_obj = json.loads(line.strip())
+                            # Write with explicit newline to ensure consistent line endings
+                            outfile.write(json.dumps(json_obj) + '\n')
+                        except json.JSONDecodeError as e:
+                            print(f"Warning: Skipping invalid JSON in {input_file}: {e}")
+            except Exception as e:
+                print(f"Error processing {input_file}: {e}")
 
 device = ''
 model = SetFitModel.from_pretrained("sentence-transformers/all-mpnet-base-v2", device_map = 'auto')
 # model = RobertaModel.from_pretrained("microsoft/codebert-base", device_map = 'auto')
+
+if Path(testset_filename).is_file(): pass
+else: loaddata.main(testset_path, testset_filename)
+
+if Path(evalset_filename).is_file(): pass
+else: loaddata.main(evalset_path, evalset_filename)
 
 if Path(trainset_filename).is_file(): pass
 else: 
@@ -38,14 +80,9 @@ else:
         trainset_files = []
         for x in range(0,13):
             trainset_files.append('python/final/jsonl/train/python_train_'+str(x)+'.jsonl')
-        merge_json_files(trainset_files,trainset_path)
+        # merge_json_files(trainset_files,trainset_path)
+        combine_jsonl_files(trainset_files,trainset_path)
     loaddata.main(trainset_path, trainset_filename)
-
-if Path(testset_filename).is_file(): pass
-else: loaddata.main(testset_path, testset_filename)
-
-if Path(evalset_filename).is_file(): pass
-else: loaddata.main(evalset_path, evalset_filename)
 
 train_df = pd.read_csv(trainset_filename)
 # train_df['code_tokens'] = train_df['code_tokens'].apply(ast.literal_eval)

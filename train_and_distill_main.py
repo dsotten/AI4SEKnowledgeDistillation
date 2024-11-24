@@ -64,7 +64,7 @@ def combine_jsonl_files(input_files, output_file):
                 print(f"Error processing {input_file}: {e}")
 
 device = ''
-model = SetFitModel.from_pretrained("sentence-transformers/all-mpnet-base-v2", device_map = 'auto')
+model = SetFitModel.from_pretrained("sentence-transformers/all-mpnet-base-v2")
 # model = RobertaModel.from_pretrained("microsoft/codebert-base", device_map = 'auto')
 
 if Path(testset_filename).is_file(): pass
@@ -120,7 +120,7 @@ metrics = teacher_trainer.evaluate()
 print(metrics)
 teacher_trainer.save_model('./teacher-model')
 
-model = SetFitModel.from_pretrained("sentence-transformers/all-MiniLM-L12-v2", device_map = 'auto')
+model = SetFitModel.from_pretrained("sentence-transformers/all-MiniLM-L12-v2")
 
 distillation_args = TrainingArguments(
     batch_size=16,

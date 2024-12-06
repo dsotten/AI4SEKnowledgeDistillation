@@ -104,8 +104,7 @@ print("Finished loading the datasets")
 
 args = TrainingArguments(
     batch_size=64,
-    num_epochs=5,
-    device=device
+    num_epochs=5
 )
 
 print("Beginning training...")
@@ -126,8 +125,7 @@ model = SetFitModel.from_pretrained("sentence-transformers/all-MiniLM-L12-v2").t
 
 distillation_args = TrainingArguments(
     batch_size=16,
-    max_steps=500,
-    device=device
+    max_steps=500
 )
 
 distillation_trainer = DistillationTrainer(

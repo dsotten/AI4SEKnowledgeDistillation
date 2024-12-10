@@ -12,6 +12,10 @@ from datasets import Dataset
 from setfit import SetFitModel, TrainingArguments, Trainer
 from setfit import DistillationTrainer
 
+# import gc
+# gc.collect()
+# torch.cuda.empty_cache()
+
 trainset_path = 'python/final/jsonl/train/python_train.jsonl' #Might need to account for dataset being spread across 13 files
 trainset_filename = 'train.csv'
 testset_path = 'python/final/jsonl/test/python_test_0.jsonl'
@@ -64,7 +68,12 @@ def combine_jsonl_files(input_files, output_file):
             except Exception as e:
                 print(f"Error processing {input_file}: {e}")
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+use_cuda = torch.cuda.is_available()
+if use_cuda:
+    print("**using GPU now**")
+    device = torch.device('cuda', 0)
+else:
+    device = torch.device('cpu')
 teacher_model = SetFitModel.from_pretrained("sentence-transformers/all-mpnet-base-v2").to(device)
 # model = RobertaModel.from_pretrained("microsoft/codebert-base", device_map = 'auto')
 
@@ -86,7 +95,7 @@ else:
     loaddata.main(trainset_path, trainset_filename)
 
 train_df = pd.read_csv(trainset_filename)
-train_size = len(train_df) // 3
+train_size = len(train_df) // 2000
 train_df = train_df.iloc[0:train_size]
 print(f"Train Size: {train_size}")
 train_df.rename(columns={'code': 'text', 'docstring': 'label'}, inplace=True)
@@ -95,7 +104,7 @@ train_df.rename(columns={'code': 'text', 'docstring': 'label'}, inplace=True)
 train_dataset = Dataset.from_pandas(train_df)
 
 test_df = pd.read_csv(testset_filename)
-test_size = len(test_df) // 3
+test_size = len(test_df) // 200
 test_df = test_df.iloc[0:test_size]
 print(f"Test Size: {test_size}")
 test_df.rename(columns={'code': 'text', 'docstring': 'label'}, inplace=True)
@@ -103,7 +112,10 @@ test_df.rename(columns={'code': 'text', 'docstring': 'label'}, inplace=True)
 # test_df['docstring_tokens'] = test_df['docstring_tokens'].apply(ast.literal_eval)
 test_dataset = Dataset.from_pandas(test_df)
 
-eval_df = pd.read_csv(evalset_filename).iloc[0:3]
+eval_df = pd.read_csv(evalset_filename)
+eval_size = len(eval_df) // 200
+eval_df = eval_df.iloc[0:eval_size]
+print(f"Eval Size: {eval_size}")
 eval_df.rename(columns={'code': 'text', 'docstring': 'label'}, inplace=True)
 # eval_df['code_tokens'] = eval_df['code_tokens'].apply(ast.literal_eval)
 # eval_df['docstring_tokens'] = eval_df['docstring_tokens'].apply(ast.literal_eval)
@@ -128,7 +140,7 @@ metrics = teacher_trainer.evaluate()
 print(metrics)
 teacher_model.save_pretrained('./teacher-model')
 
-student_model = SetFitModel.from_pretrained("sentence-transformers/all-MiniLM-L12-v2").to(device)
+student_model = SetFitModel.from_pretrained("sentence-transformers/all-MiniLM-L12-v2")
 
 distillation_args = TrainingArguments(
     batch_size=16,

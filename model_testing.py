@@ -27,7 +27,7 @@ def calculate_bleu(reference, candidate):
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 teacher_path = './teacher-model'
-student_path = ''
+student_path = './distilled-model'
 tokenizer = LlamaTokenizer.from_pretrained("huggyllama/llama-7b")
 
 train_csv = 'train.csv'
@@ -49,14 +49,15 @@ test_df = test_df.iloc[0:(len(test_df)//100)]
 
 lr = LinearRegression()
 teacher_model = SetFitModel.from_pretrained(teacher_path).to(device)
-# teacher_model = TFAutoModel.from_pretrained(teacher_path).to(device)
+student_model = SetFitModel.from_pretrained(student_path).to(device)
 
-# student_model = SetFitModel.from_pretrained(student_path).to(device)
-
-# print("Train_DF row: ",train_df[0])
 train_embeddings = teacher_model.model_body.encode([row['code'] for _, row in train_df.iterrows()])
 teacher_model.model_head = LogisticRegression(multi_class='auto', max_iter=1000)
 teacher_model.model_head.fit(train_embeddings, [row['docstring'] for _, row in train_df.iterrows()])
+
+train_embeddings = student_model.model_body.encode([row['code'] for _, row in train_df.iterrows()])
+student_model.model_head = LogisticRegression(multi_class='auto', max_iter=1000)
+student_model.model_head.fit(train_embeddings, [row['docstring'] for _, row in train_df.iterrows()])
 
 teacher_results = []
 student_results = []
@@ -88,8 +89,27 @@ for _, row in test_df.iterrows():
     })
 pd.DataFrame(teacher_results).to_csv('teacher_results.csv', index=False)
 
-
-
 #Student testing
 for _, row in test_df.iterrows():
-    break
+    model_input = row['code']
+        
+    expected_output = row['docstring']
+    
+    print('Expected: ',expected_output)
+
+    # predicted_output = teacher_model.predict(model_input.cuda())
+    predicted_output = student_model.predict(model_input)
+
+    # predicted_output = tokenizer.decode(predicted_output[0], skip_special_tokens=True)
+    print('Predicted: ',predicted_output)
+    
+    score = calculate_bleu(expected_output.split(), predicted_output.split())
+    print("BLEU Score:", score)
+
+    student_results.append({
+        'model_input': row['code'],
+        'expected_ouput': expected_output,
+        'predicted_output': predicted_output,
+        'BLEU_score': score,
+    })
+pd.DataFrame(student_results).to_csv('student_results.csv', index=False)

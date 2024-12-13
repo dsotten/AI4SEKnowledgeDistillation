@@ -19,7 +19,7 @@ def calculate_bleu(reference, candidate):
         float: The BLEU score.
     """
 
-    return sentence_bleu(reference, candidate)
+    return sentence_bleu(reference, candidate, weights=(1, 0, 0, 0))
 
 # Example usage
 # reference = [["the", "cat", "is", "on", "the", "mat"]]
@@ -27,13 +27,14 @@ def calculate_bleu(reference, candidate):
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 teacher_path = './teacher-model'
+# teacher_path = './models/teacher-model-2 (batch_size=1, epochs=5, max_steps=500)'
 student_path = './distilled-model'
 tokenizer = LlamaTokenizer.from_pretrained("huggyllama/llama-7b")
 
 train_csv = 'train.csv'
 train_df = pd.read_csv(train_csv)
 
-train_size = len(train_df) // 130
+train_size = len(train_df) // 100
 train_df = train_df.iloc[0:train_size]
 print(f"Train Size: {train_size}")
 # train_df.rename(columns={'code': 'text', 'docstring': 'label'}, inplace=True)
@@ -61,6 +62,8 @@ student_model.model_head.fit(train_embeddings, [row['docstring'] for _, row in t
 
 teacher_results = []
 student_results = []
+total_BLEU_score = 0
+num_tests = 0
 
 #Teacher testing
 for _, row in test_df.iterrows():
@@ -81,35 +84,58 @@ for _, row in test_df.iterrows():
     score = calculate_bleu(expected_output.split(), predicted_output.split())
     print("BLEU Score:", score)
 
+    total_BLEU_score += score
+    num_tests += 1
+
     teacher_results.append({
         'model_input': row['code'],
         'expected_ouput': expected_output,
         'predicted_output': predicted_output,
         'BLEU_score': score,
     })
+
+teacher_results.append({
+        'model_input': '',
+        'expected_ouput': '',
+        'predicted_output': 'Average BLEU score: ',
+        'BLEU_score': total_BLEU_score/num_tests,
+    })
 pd.DataFrame(teacher_results).to_csv('teacher_results.csv', index=False)
 
-#Student testing
-for _, row in test_df.iterrows():
-    model_input = row['code']
+total_BLEU_score = 0
+num_tests = 0
+
+# Student testing
+# for _, row in test_df.iterrows():
+#     model_input = row['code']
         
-    expected_output = row['docstring']
+#     expected_output = row['docstring']
     
-    print('Expected: ',expected_output)
+#     print('Expected: ',expected_output)
 
-    # predicted_output = teacher_model.predict(model_input.cuda())
-    predicted_output = student_model.predict(model_input)
+#     # predicted_output = teacher_model.predict(model_input.cuda())
+#     predicted_output = student_model.predict(model_input)
 
-    # predicted_output = tokenizer.decode(predicted_output[0], skip_special_tokens=True)
-    print('Predicted: ',predicted_output)
+#     # predicted_output = tokenizer.decode(predicted_output[0], skip_special_tokens=True)
+#     print('Predicted: ',predicted_output)
     
-    score = calculate_bleu(expected_output.split(), predicted_output.split())
-    print("BLEU Score:", score)
+#     score = calculate_bleu(expected_output.split(), predicted_output.split())
+#     print("BLEU Score:", score)
 
-    student_results.append({
-        'model_input': row['code'],
-        'expected_ouput': expected_output,
-        'predicted_output': predicted_output,
-        'BLEU_score': score,
-    })
-pd.DataFrame(student_results).to_csv('student_results.csv', index=False)
+#     total_BLEU_score += score
+#     num_tests += 1
+
+#     student_results.append({
+#         'model_input': row['code'],
+#         'expected_ouput': expected_output,
+#         'predicted_output': predicted_output,
+#         'BLEU_score': score,
+#     })
+
+# student_results.append({
+#         'model_input': '',
+#         'expected_ouput': '',
+#         'predicted_output': 'Average BLEU score: ',
+#         'BLEU_score': total_BLEU_score/num_tests,
+#     })
+# pd.DataFrame(student_results).to_csv('student_results.csv', index=False)

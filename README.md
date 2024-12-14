@@ -1,4 +1,4 @@
-This repo stores our progress for developing a distillation process for code summarization generation.
+This repo stores our progress for developing a distillation process for code summarization generation.  
 For both training and testing, if you're testing on a different dataset, change trainset_filename, testset_filename, and evalset_filename.
 In addition, alter the train_size, test_size, and eval_size variables to use a smaller subset of the data if needed.
 

@@ -26,14 +26,12 @@ def calculate_bleu(reference, candidate):
 # candidate = "the cat sat on the mat"
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-teacher_path = './models_large/teacher-model-final'
-# teacher_path = './models/teacher-model-2 (batch_size=1, epochs=5, max_steps=500)'
-student_path = './models_large/distilled-model-final'
+teacher_path = './teacher-model'
+student_path = './distilled-model'
 tokenizer = LlamaTokenizer.from_pretrained("huggyllama/llama-7b")
 
-train_csv = 'train.csv'
-train_df = pd.read_csv(train_csv)
-
+trainset_filename = 'train.csv'
+train_df = pd.read_csv(trainset_filename)
 train_size = len(train_df) // 50
 train_df = train_df.iloc[0:train_size]
 print(f"Train Size: {train_size}")
@@ -42,13 +40,15 @@ print(f"Train Size: {train_size}")
 # train_df['docstring_tokens'] = train_df['docstring_tokens'].apply(ast.literal_eval)
 # train_dataset = Dataset.from_pandas(train_df)
 
-eval_csv = 'eval.csv'
-eval_df = pd.read_csv(eval_csv)
-eval_df = eval_df.iloc[0:len(eval_df) // 10]
+evalset_path = 'eval.csv'
+eval_df = pd.read_csv(evalset_path)
+eval_size = len(eval_df) // 10
+eval_df = eval_df.iloc[0:test_size]
 
-test_csv = 'test.csv'
-test_df = pd.read_csv(test_csv)
-test_df = test_df.iloc[0:(len(test_df)//100)]
+testset_path = 'test.csv'
+test_df = pd.read_csv(testset_path)
+test_size = len(test_df) // 100
+test_df = test_df.iloc[0:test_size]
 
 teacher_model = SetFitModel.from_pretrained(teacher_path).to(device)
 

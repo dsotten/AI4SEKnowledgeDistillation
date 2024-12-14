@@ -40,13 +40,13 @@ print(f"Train Size: {train_size}")
 # train_df['docstring_tokens'] = train_df['docstring_tokens'].apply(ast.literal_eval)
 # train_dataset = Dataset.from_pandas(train_df)
 
-evalset_path = 'eval.csv'
-eval_df = pd.read_csv(evalset_path)
+evalset_filename = 'eval.csv'
+eval_df = pd.read_csv(evalset_filename)
 eval_size = len(eval_df) // 10
 eval_df = eval_df.iloc[0:test_size]
 
-testset_path = 'test.csv'
-test_df = pd.read_csv(testset_path)
+testset_filename = 'test.csv'
+test_df = pd.read_csv(testset_filename)
 test_size = len(test_df) // 100
 test_df = test_df.iloc[0:test_size]
 

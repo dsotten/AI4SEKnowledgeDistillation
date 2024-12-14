@@ -26,15 +26,15 @@ def calculate_bleu(reference, candidate):
 # candidate = "the cat sat on the mat"
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-teacher_path = './teacher-model'
+teacher_path = './models_large/teacher-model-final'
 # teacher_path = './models/teacher-model-2 (batch_size=1, epochs=5, max_steps=500)'
-student_path = './distilled-model'
+student_path = './models_large/distilled-model-final'
 tokenizer = LlamaTokenizer.from_pretrained("huggyllama/llama-7b")
 
 train_csv = 'train.csv'
 train_df = pd.read_csv(train_csv)
 
-train_size = len(train_df) // 100
+train_size = len(train_df) // 50
 train_df = train_df.iloc[0:train_size]
 print(f"Train Size: {train_size}")
 # train_df.rename(columns={'code': 'text', 'docstring': 'label'}, inplace=True)
@@ -43,25 +43,20 @@ print(f"Train Size: {train_size}")
 # train_dataset = Dataset.from_pandas(train_df)
 
 eval_csv = 'eval.csv'
-test_csv = 'test.csv'
 eval_df = pd.read_csv(eval_csv)
+eval_df = eval_df.iloc[0:len(eval_df) // 10]
+
+test_csv = 'test.csv'
 test_df = pd.read_csv(test_csv)
 test_df = test_df.iloc[0:(len(test_df)//100)]
 
-lr = LinearRegression()
 teacher_model = SetFitModel.from_pretrained(teacher_path).to(device)
-student_model = SetFitModel.from_pretrained(student_path).to(device)
 
 train_embeddings = teacher_model.model_body.encode([row['code'] for _, row in train_df.iterrows()])
 teacher_model.model_head = LogisticRegression(multi_class='auto', max_iter=1000)
 teacher_model.model_head.fit(train_embeddings, [row['docstring'] for _, row in train_df.iterrows()])
 
-train_embeddings = student_model.model_body.encode([row['code'] for _, row in train_df.iterrows()])
-student_model.model_head = LogisticRegression(multi_class='auto', max_iter=1000)
-student_model.model_head.fit(train_embeddings, [row['docstring'] for _, row in train_df.iterrows()])
-
 teacher_results = []
-student_results = []
 total_BLEU_score = 0
 num_tests = 0
 
@@ -102,40 +97,50 @@ teacher_results.append({
     })
 pd.DataFrame(teacher_results).to_csv('teacher_results.csv', index=False)
 
+student_results = []
 total_BLEU_score = 0
 num_tests = 0
 
+student_model = SetFitModel.from_pretrained(student_path).to(device)
+# train_embeddings = student_model.model_body.encode([row['code'] for _, row in eval_df.iterrows()])
+# student_model.model_head = LogisticRegression(multi_class='auto', max_iter=1000)
+# student_model.model_head.fit(train_embeddings, [row['docstring'] for _, row in eval_df.iterrows()])
+
+train_embeddings = student_model.model_body.encode([row['code'] for _, row in train_df.iterrows()])
+student_model.model_head = LogisticRegression(multi_class='auto', max_iter=1000)
+student_model.model_head.fit(train_embeddings, [row['docstring'] for _, row in train_df.iterrows()])
+
 # Student testing
-# for _, row in test_df.iterrows():
-#     model_input = row['code']
+for _, row in test_df.iterrows():
+    model_input = row['code']
         
-#     expected_output = row['docstring']
+    expected_output = row['docstring']
     
-#     print('Expected: ',expected_output)
+    print('Expected: ',expected_output)
 
-#     # predicted_output = teacher_model.predict(model_input.cuda())
-#     predicted_output = student_model.predict(model_input)
+    # predicted_output = teacher_model.predict(model_input.cuda())
+    predicted_output = student_model.predict(model_input)
 
-#     # predicted_output = tokenizer.decode(predicted_output[0], skip_special_tokens=True)
-#     print('Predicted: ',predicted_output)
+    # predicted_output = tokenizer.decode(predicted_output[0], skip_special_tokens=True)
+    print('Predicted: ',predicted_output)
     
-#     score = calculate_bleu(expected_output.split(), predicted_output.split())
-#     print("BLEU Score:", score)
+    score = calculate_bleu(expected_output.split(), predicted_output.split())
+    print("BLEU Score:", score)
 
-#     total_BLEU_score += score
-#     num_tests += 1
+    total_BLEU_score += score
+    num_tests += 1
 
-#     student_results.append({
-#         'model_input': row['code'],
-#         'expected_ouput': expected_output,
-#         'predicted_output': predicted_output,
-#         'BLEU_score': score,
-#     })
+    student_results.append({
+        'model_input': row['code'],
+        'expected_ouput': expected_output,
+        'predicted_output': predicted_output,
+        'BLEU_score': score,
+    })
 
-# student_results.append({
-#         'model_input': '',
-#         'expected_ouput': '',
-#         'predicted_output': 'Average BLEU score: ',
-#         'BLEU_score': total_BLEU_score/num_tests,
-#     })
-# pd.DataFrame(student_results).to_csv('student_results.csv', index=False)
+student_results.append({
+        'model_input': '',
+        'expected_ouput': '',
+        'predicted_output': 'Average BLEU score: ',
+        'BLEU_score': total_BLEU_score/num_tests,
+    })
+pd.DataFrame(student_results).to_csv('student_results.csv', index=False)
